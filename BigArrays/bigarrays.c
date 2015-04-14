@@ -6,7 +6,7 @@
 int main (int argc, char* argv[])
 {
     int rank, root, nprocesses, source, target, tag;
-    int size, arraysize;
+    int size, arraysize, iterator;
     int correct;
     int *nums, *Rnums, *test;
     MPI_Status status;
@@ -24,13 +24,17 @@ int main (int argc, char* argv[])
     nums = (int*) malloc(sizeof(int)*arraysize);
  
     MPI_Comm_size(MPI_COMM_WORLD, &nprocesses);
+
+    for (iterator = 0; iterator < arraysize; iterator++) {
+        nums[iterator] = (rank + target) * (iterator + 1); 
+    }
  
     tag = nums;
 
-    for (int source = 0; source < nprocesses; source++) {
+    for (source = 0; source < nprocesses; source++) {
         if(rank!=source) {
-            for (int x = 0; x < arraysize; x++) {
-                test[x] = (source + rank) * (x + 1); 
+            for (iterator = 0; iterator < arraysize; iterator++) {
+                test[iterator] = (source + rank) * (iterator + 1); 
             }
             MPI_IRECV(&Rnums, arraysize, MPI_INT, source, tag, MPI_COMM_WORLD, &request);
             MPI_WAIT(&request, &status);
@@ -42,11 +46,8 @@ int main (int argc, char* argv[])
         }
     }
 
-    for (int target = 0; target < nprocesses; target++) {
+    for (target = 0; target < nprocesses; target++) {
         if(rank!=target) {
-            for (int x = 0; x < arraysize; x++) {
-                nums[x] = (rank + target) * (x + 1); 
-            }
             
             MPI_SEND(&nums, arraysize, MPI_INT, target, tag, MPI_COMM_WORLD);
         }
