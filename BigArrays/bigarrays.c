@@ -39,7 +39,7 @@ int main (int argc, char* argv[])
             MPI_Irecv(&Rnums, arraysize, MPI_INT, source, tag, MPI_COMM_WORLD, &request);
             MPI_Wait(&request, &status);
             if (rank != 0) {
-                MPI_Send(memcmp(Rnums, test, sizeof(Rnums)), arraysize, MPI_INT, root, tag, MPI_COMM_WORLD);
+                MPI_Send(&memcmp(Rnums, test, sizeof(Rnums)), arraysize, MPI_INT, root, tag, MPI_COMM_WORLD);
             } else { 
                 MPI_Recv(&correct, 1, MPI_INT, source, tag, MPI_COMM_WORLD);
             }
