@@ -29,19 +29,19 @@ int main (int argc, char* argv[])
         nums[iterator] = (rank + target) * (iterator + 1); 
     }
  
-    tag = nums;
+    tag=sizeof(nums); //this is probably bad, don't do this
 
     for (source = 0; source < nprocesses; source++) {
         if(rank!=source) {
             for (iterator = 0; iterator < arraysize; iterator++) {
                 test[iterator] = (source + rank) * (iterator + 1); 
             }
-            MPI_IRECV(&Rnums, arraysize, MPI_INT, source, tag, MPI_COMM_WORLD, &request);
-            MPI_WAIT(&request, &status);
+            MPI_Irecv(&Rnums, arraysize, MPI_INT, source, tag, MPI_COMM_WORLD, &request);
+            MPI_Wait(&request, &status);
             if (rank != 0) {
-                MPI_SEND(memcmp(Rnums, test, sizeof(Rnums)), arraysize, MPI_INT, root, tag, MPI_COMM_WORLD);
+                MPI_Send(memcmp(Rnums, test, sizeof(Rnums)), arraysize, MPI_INT, root, tag, MPI_COMM_WORLD);
             } else { 
-                MPI_RECV(&correct, 1, MPI_INT, source, tag, MPI_COMM_WORLD);
+                MPI_Recv(&correct, 1, MPI_INT, source, tag, MPI_COMM_WORLD);
             }
         }
     }
@@ -49,10 +49,12 @@ int main (int argc, char* argv[])
     for (target = 0; target < nprocesses; target++) {
         if(rank!=target) {
             
-            MPI_SEND(&nums, arraysize, MPI_INT, target, tag, MPI_COMM_WORLD);
+            MPI_Send(&nums, arraysize, MPI_INT, target, tag, MPI_COMM_WORLD);
         }
     } 
  
+    free(nums);
+
     MPI_Finalize();
 
     return 0;
