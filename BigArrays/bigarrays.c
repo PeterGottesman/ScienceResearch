@@ -53,10 +53,12 @@ int main (int argc, char* argv[])
             printf("%d \n", rank);
             if (rank != root) {
                 printf("I guess the problem is here? \n");
-                correct =  memcmp(Rnums, test, sizeof(Rnums));
+                correct =  memcmp(Rnums, test, recvsize);
                 if (correct != 0) {
                     printf("rank %d got incorrect data\n", rank);
                     MPI_Abort(MPI_COMM_WORLD, 1);
+                } else {
+                    printf("rank %d got correct data from %d \n", rank, source);
                 }
                 //MPI_Send(&correct, 1, MPI_INT, root, tag, MPI_COMM_WORLD);
             }
