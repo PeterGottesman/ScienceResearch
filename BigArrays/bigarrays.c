@@ -17,7 +17,7 @@ int main (int argc, char* argv[])
     
     MPI_Init(&argc, &argv);
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank)
 
     arraysize = rank*size;
     nums = (int*) malloc(sizeof(int)*arraysize);
