@@ -19,10 +19,11 @@ int main (int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
     tag = 1;
-    MPI_Request request[nproc*2];
-    MPI_Status status[nproc*2];
+    MPI_Request request[(nproc-1)*2];
+    MPI_Status status[(nproc-1)*2];
 
-    for (int sender=0; sender < nproc; sender++) {
+    arraysize = 0;
+    for (int sender=0; sender <= nproc; sender++) {
         arraysize+=size*sender;
     }
     nums = (int *) malloc(sizeof(int)*arraysize);
@@ -35,8 +36,9 @@ int main (int argc, char* argv[]) {
             for (int receiver = 0; receiver < nproc; receiver++) {
                 if(receiver!=rank) {
                     for (int filler = 0; filler < size*sender; filler++) {
-                        nums[filler] = (rank + receiver) * (filler + 1);
+                        nums[filler+place] = (rank + receiver) * (filler + 1);
                     }
+                    printf("%d\n", nums[place+1]);
                     MPI_Isend(&nums[place], size*sender, MPI_INT, receiver, tag, MPI_COMM_WORLD, &request[numrequest++]);
                 }
             }
@@ -48,9 +50,18 @@ int main (int argc, char* argv[]) {
         place += size*sender;
         if (rank!=sender) {
             MPI_Irecv(&nums[place], size*sender, MPI_INT, sender, tag, MPI_COMM_WORLD, &request[numrequest++]);
+        }
+    }
+    
+    MPI_Waitall((nproc-1)*2, request, status);
+    
+    place = 0;
+    for (int sender = 0; sender < nproc; sender++) {
+        place += size*sender;
+        if (rank!=sender) {
             correct = true;
-            /*for (int filler = 0; filler < size*sender; filler++) {
-                if (nums[filler] != (rank + sender) * (filler + 1)) {
+            for (int filler = 0; filler < size*sender; filler++) {
+                if (nums[filler+place] != (rank + sender) * (filler + 1)) {
                     printf("%d got incorrect data from %d\n", rank, sender);
                     correct = false;
                     break;
@@ -58,14 +69,9 @@ int main (int argc, char* argv[]) {
             }
             if (correct) {
                 printf("%d got correct data from %d\n", rank, sender);
-            }*/
+            }
         }
-
     }
-    
-    MPI_Waitall(nproc*2, request, status);
-
-    
 
     free(nums);
 
