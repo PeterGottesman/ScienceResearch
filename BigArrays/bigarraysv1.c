@@ -1,11 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "mpi.h"
  
 int main (int argc, char* argv[]) {
-    int rank, root, nproc, tag, size, arraysize, recsize;
-    int *nums, *rnums, *rectest;
+    int rank, root, nproc, tag, size, arraysize, recsize, sendsize;
+    int *nums;
+    bool correct;
     MPI_Status status;
 
     size = 50000;
@@ -15,38 +17,40 @@ int main (int argc, char* argv[]) {
  
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    arraysize = size*rank;
-    nums = (int *) malloc(sizeof(int)*arraysize);
-
     MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 
+    arraysize = size*(nproc);
+    sendsize = size*rank;
+    nums = (int *) malloc(sizeof(int)*arraysize);
     tag = 1;
 
     for (int sender=0; sender < nproc; sender++) {
         if(rank==sender) {
             for (int receiver = 0; receiver < nproc; receiver++) {
                 if(receiver!=rank) {
-                    for (int filler = 0; filler < arraysize; filler++) {
+                    for (int filler = 0; filler < sendsize; filler++) {
                         nums[filler] = (rank + receiver) * (filler + 1);
                     }
-                    MPI_Send(nums, arraysize, MPI_INT, receiver, tag, MPI_COMM_WORLD);
+                    MPI_Send(nums, sendsize, MPI_INT, receiver, tag, MPI_COMM_WORLD);
                 }
             }
+            free(nums);
         } else {
             recsize = size*sender;
-            rectest = (int *) malloc(sizeof(int)*recsize);
+            //nums = (int *) malloc(sizeof(int)*recsize);
+            MPI_Recv(nums, recsize, MPI_INT, sender, tag, MPI_COMM_WORLD, &status);
+            correct = true;
             for (int filler = 0; filler < recsize; filler++) {
-                rectest[filler] = (rank + sender) * (filler + 1);
+                if (nums[filler] != (rank + sender) * (filler + 1)) {
+                    printf("%d got incorrect data from %d\n", rank, sender);
+                    correct = false;
+                    break;
+                } 
             }
-            rnums = (int *) malloc(sizeof(int)*recsize);
-            MPI_Recv(rnums, recsize, MPI_INT, sender, tag, MPI_COMM_WORLD, &status);
-            if(memcmp(rectest, rnums, recsize)==0) {
-                printf("rank %d got correct data from %d \n", rank, sender);
-            } else {
-                printf("rank %d got incorrect data from %d \n", rank, sender);
+            if (correct) {
+                printf("%d got correct data from %d\n", rank, sender);
             }
-            free(rnums);
-            free(rectest);
+            //free(nums);
         }
     }
 
